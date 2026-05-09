@@ -3,6 +3,10 @@ import httpStatus from 'http-status-codes';
 import { JwtPayload } from 'jsonwebtoken';
 import { envVars } from '../../config/env';
 import AppError from '../../error/AppError';
+import {
+    calculatePagination,
+    PaginationQuery,
+} from '../../middlewares/pagination';
 import { IAuthProvider, IUser, Role } from './user.interface';
 import { User } from './user.model';
 
@@ -98,7 +102,11 @@ const updateUser = async (
 
 // delete user
 const deleteUser = async (userId: string) => {
-    const user = await User.findByIdAndDelete(userId);
+    const user = await User.findOneAndUpdate(
+        { _id: userId },
+        { isDeleted: true },
+        { new: true }
+    );
     if (!user) {
         throw new AppError(httpStatus.NOT_FOUND, 'User not found');
     }
@@ -114,34 +122,59 @@ const getMe = async (userId: string) => {
 };
 
 // get all users
-const getAllUsers = async () => {
-    const users = await User.find();
+const getAllUsers = async (query: PaginationQuery) => {
+    const { page, limit, skip, sortBy, sortOrder } = calculatePagination(query);
+
+    const users = await User.find()
+        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+        .skip(skip)
+        .limit(limit);
     const totalUsers = await User.countDocuments();
+
     return {
         data: users,
         meta: {
             total: totalUsers,
+            page,
+            limit,
+            totalPage: Math.ceil(totalUsers / limit),
         },
     };
 };
 
-const getAllDrivers = async () => {
-    const drivers = await User.find({ role: Role.DRIVER });
+const getAllDrivers = async (query: PaginationQuery) => {
+    const { page, limit, skip, sortBy, sortOrder } = calculatePagination(query);
+
+    const drivers = await User.find({ role: Role.DRIVER })
+        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+        .skip(skip)
+        .limit(limit);
     const totalDrivers = await User.countDocuments({ role: Role.DRIVER });
     return {
         data: drivers,
         meta: {
             total: totalDrivers,
+            page,
+            limit,
+            totalPage: Math.ceil(totalDrivers / limit),
         },
     };
 };
-const getAllRiders = async () => {
-    const riders = await User.find({ role: Role.RIDER });
+const getAllRiders = async (query: PaginationQuery) => {
+    const { page, limit, skip, sortBy, sortOrder } = calculatePagination(query);
+
+    const riders = await User.find({ role: Role.RIDER })
+        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+        .skip(skip)
+        .limit(limit);
     const totalRiders = await User.countDocuments({ role: Role.RIDER });
     return {
         data: riders,
         meta: {
             total: totalRiders,
+            page,
+            limit,
+            totalPage: Math.ceil(totalRiders / limit),
         },
     };
 };

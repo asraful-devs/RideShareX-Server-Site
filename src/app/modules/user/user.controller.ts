@@ -84,7 +84,7 @@ const getMe = catchAsync(
 const getAllUsers = catchAsync(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async (req: Request, res: Response, next: NextFunction) => {
-        const result = await UserService.getAllUsers();
+        const result = await UserService.getAllUsers(req.query);
 
         sendResponse(res, {
             success: true,
@@ -99,7 +99,7 @@ const getAllUsers = catchAsync(
 const getAllDrivers = catchAsync(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async (req: Request, res: Response, next: NextFunction) => {
-        const result = await UserService.getAllDrivers();
+        const result = await UserService.getAllDrivers(req.query);
 
         sendResponse(res, {
             success: true,
@@ -114,7 +114,7 @@ const getAllDrivers = catchAsync(
 const getAllRiders = catchAsync(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async (req: Request, res: Response, next: NextFunction) => {
-        const result = await UserService.getAllRiders();
+        const result = await UserService.getAllRiders(req.query);
 
         sendResponse(res, {
             success: true,

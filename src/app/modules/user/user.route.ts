@@ -7,9 +7,6 @@ import { createUserZodSchema, updateUserZodSchema } from './user.validation';
 
 const router = Router();
 
-/* ----- Fixed Order ----- */
-// Static routes should come before dynamic ones
-
 // Current user info
 router.get('/me', checkAuth(...Object.values(Role)), UserControllers.getMe);
 
@@ -31,7 +28,7 @@ router.get(
 );
 
 // Get all riders (admin only)
-router.get('/all-riders', checkAuth(Role.ADMIN), UserControllers.getAllRiders);
+router.get('/all-riders', UserControllers.getAllRiders);
 
 // Update user (by id)
 router.patch(

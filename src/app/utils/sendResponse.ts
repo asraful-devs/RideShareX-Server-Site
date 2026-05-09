@@ -1,18 +1,17 @@
 import { Response } from 'express';
 
-interface Tmeta {
-    total: number;
-}
-
-interface TResponse<T> {
+interface TResponse<T, TMeta = unknown> {
     statusCode: number;
     success: boolean;
     message: string;
     data: T;
-    meta?: Tmeta;
+    meta?: TMeta;
 }
 
-const sendResponse = <T>(res: Response, data: TResponse<T>) => {
+const sendResponse = <T, TMeta = unknown>(
+    res: Response,
+    data: TResponse<T, TMeta>
+) => {
     res.status(data.statusCode).json({
         statusCode: data.statusCode,
         success: data.success,
