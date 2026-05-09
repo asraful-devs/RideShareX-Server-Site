@@ -28,7 +28,7 @@ router.get(
 );
 
 // Get all riders (admin only)
-router.get('/all-riders', UserControllers.getAllRiders);
+router.get('/all-riders', checkAuth(Role.ADMIN), UserControllers.getAllRiders);
 
 // Update user (by id)
 router.patch(

@@ -7,6 +7,20 @@ import { IsActive } from '../modules/user/user.interface';
 import { User } from '../modules/user/user.model';
 import { verifyToken } from '../utils/jwt';
 
+// Extract token from Authorization header or cookie
+const extractAccessToken = (
+    authorization?: string,
+    cookieToken?: string
+): string | undefined => {
+    if (authorization) {
+        // Handle "Bearer <token>" format
+        return authorization.startsWith('Bearer ')
+            ? authorization.slice(7)
+            : authorization;
+    }
+    return cookieToken;
+};
+
 export const checkAuth =
     (...authRoles: string[]) =>
     async (
@@ -15,19 +29,45 @@ export const checkAuth =
         next: NextFunction
     ) => {
         try {
-            const accessToken =
-                req.headers.authorization || req.cookies.accessToken;
+            const accessToken = extractAccessToken(
+                req.headers.authorization as string | undefined,
+                req.cookies.accessToken
+            );
 
             if (!accessToken) {
-                throw new AppError(403, 'No Token Recieved');
+                throw new AppError(
+                    403,
+                    'No Token Received. Please login again.'
+                );
             }
 
-            // const verifiedToken = jwt.verify(accessToken, 'secretOrPrivateKey');
-
-            const verifiedToken = verifyToken(
-                accessToken,
-                envVars.JWT_ACCESS_TOKEN_SECRET
-            ) as JwtPayload;
+            let verifiedToken: JwtPayload;
+            try {
+                verifiedToken = verifyToken(
+                    accessToken,
+                    envVars.JWT_ACCESS_TOKEN_SECRET
+                ) as JwtPayload;
+            } catch (tokenError: unknown) {
+                const err = tokenError as {
+                    name?: string;
+                    message?: string;
+                };
+                if (err.name === 'TokenExpiredError') {
+                    throw new AppError(
+                        401,
+                        'Token has expired. Please refresh your token.'
+                    );
+                } else if (
+                    err.name === 'JsonWebTokenError' &&
+                    err.message?.includes('invalid signature')
+                ) {
+                    throw new AppError(
+                        401,
+                        'Invalid token signature. JWT_ACCESS_TOKEN_SECRET may have changed. Please login again.'
+                    );
+                }
+                throw new AppError(401, 'Invalid token. Please login again.');
+            }
 
             const isUserExist = await User.findOne({
                 email: verifiedToken.email,

@@ -6,19 +6,21 @@ interface IAuthCookies {
 }
 
 export const setAuthCookies = (res: Response, tokenInfo: IAuthCookies) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+
     if (tokenInfo.accessToken) {
         res.cookie('accessToken', tokenInfo.accessToken, {
             httpOnly: true,
-            secure: true, // Set to true if using HTTPS
-            sameSite: 'none',
+            secure: isProduction, // Only true in production (HTTPS)
+            sameSite: isProduction ? 'none' : 'lax',
         });
     }
 
     if (tokenInfo.refreshToken) {
         res.cookie('refreshToken', tokenInfo.refreshToken, {
             httpOnly: true,
-            secure: true, // Set to true if using HTTPS
-            sameSite: 'none',
+            secure: isProduction, // Only true in production (HTTPS)
+            sameSite: isProduction ? 'none' : 'lax',
         });
     }
 };
