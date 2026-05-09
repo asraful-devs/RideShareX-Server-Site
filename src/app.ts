@@ -7,6 +7,7 @@ import { envVars } from './app/config/env';
 import './app/config/passport';
 import { globalErrorHandler } from './app/middlewares/globalErrorHandler';
 import notFound from './app/middlewares/notFound';
+import { limiter } from './app/middlewares/rateLimit';
 import { router } from './app/routes';
 
 const app = express();
@@ -33,6 +34,9 @@ app.use(
 );
 
 app.set('trust proxy', 1); // Enable if behind a reverse proxy
+
+// Apply a global rate limiter to all routes
+app.use(limiter);
 
 app.use('/api/v1', router);
 
