@@ -27,6 +27,8 @@ interface EnvConfig {
     SSL_SUCCESS_FRONTEND_URL: string;
     SSL_FAIL_FRONTEND_URL: string;
     SSL_CANCEL_FRONTEND_URL: string;
+    EMAIL_USER: string;
+    EMAIL_PASS: string;
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -56,6 +58,8 @@ const loadEnvVariables = (): EnvConfig => {
         'SSL_SUCCESS_FRONTEND_URL',
         'SSL_FAIL_FRONTEND_URL',
         'SSL_CANCEL_FRONTEND_URL',
+        'EMAIL_USER',
+        'EMAIL_PASS',
     ];
 
     const missingEnvVariables: string[] = [];
@@ -105,6 +109,8 @@ const loadEnvVariables = (): EnvConfig => {
             .SSL_SUCCESS_FRONTEND_URL as string,
         SSL_FAIL_FRONTEND_URL: process.env.SSL_FAIL_FRONTEND_URL as string,
         SSL_CANCEL_FRONTEND_URL: process.env.SSL_CANCEL_FRONTEND_URL as string,
+        EMAIL_USER: process.env.EMAIL_USER as string,
+        EMAIL_PASS: process.env.EMAIL_PASS as string,
     };
 };
 

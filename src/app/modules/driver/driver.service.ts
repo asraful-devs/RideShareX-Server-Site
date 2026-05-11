@@ -1,6 +1,7 @@
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import httpStatus from 'http-status';
 import AppError from '../../error/AppError';
+import { sendRidePickedEmail } from '../../utils/email/emailService';
 import { PaymentStatus } from '../payment/payment.interface';
 import { Payment } from '../payment/payment.model';
 import { Ride } from '../ride/ride.model';
@@ -15,13 +16,12 @@ const getAvailableRides = async () => {
 
 const pickUpRide = async (
     req: Request,
-    res: Response,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     user: any
 ) => {
     const rideId = req.params.rideId;
 
-    const ride = await Ride.findById(rideId);
+    const ride = await Ride.findById(rideId).populate('user driver');
 
     if (!ride) {
         throw new AppError(httpStatus.NOT_FOUND, 'Ride not found');
@@ -41,14 +41,32 @@ const pickUpRide = async (
         );
     }
 
-    // const driver = await Driver.create(payload);
-    // console.log(user);
-
     const result = await Ride.findByIdAndUpdate(
         rideId,
         { status: 'PICKED', driver: user.userId },
         { new: true }
-    );
+    ).populate('user driver');
+
+    // Send email notification to rider
+    if (result && result.user && result.driver) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const populatedUser = result.user as any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const populatedDriver = result.driver as any;
+
+        await sendRidePickedEmail({
+            userFirstName: populatedUser.firstName || 'Rider',
+            userEmail: populatedUser.email || '',
+            driverName:
+                populatedDriver.fullName || populatedDriver.name || 'Driver',
+            driverPhone: populatedDriver.phone || '',
+            rideStartLocation: result.pickupLocation || 'N/A',
+            rideEndLocation: result.dropLocation || 'N/A',
+            estimatedFare: result.payment || 0,
+            rideId: result._id?.toString() || '',
+        });
+    }
+
     return result;
 };
 
