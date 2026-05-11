@@ -43,15 +43,22 @@ export const checkAuth =
 
             let verifiedToken: JwtPayload;
             try {
-                verifiedToken = verifyToken(
-                    accessToken,
-                    envVars.JWT_ACCESS_TOKEN_SECRET
-                ) as JwtPayload;
+                // ⭐ Verify token using the access token secret
+                const secret = (envVars.JWT_ACCESS_TOKEN_SECRET || '').trim();
+                if (!secret) {
+                    throw new AppError(
+                        500,
+                        'Server configuration error. Please contact support.'
+                    );
+                }
+
+                verifiedToken = verifyToken(accessToken, secret) as JwtPayload;
             } catch (tokenError: unknown) {
                 const err = tokenError as {
                     name?: string;
                     message?: string;
                 };
+
                 if (err.name === 'TokenExpiredError') {
                     throw new AppError(
                         401,
@@ -63,7 +70,7 @@ export const checkAuth =
                 ) {
                     throw new AppError(
                         401,
-                        'Invalid token signature. JWT_ACCESS_TOKEN_SECRET may have changed. Please login again.'
+                        'Invalid token signature. Please login again and use the NEW token from Postman.'
                     );
                 }
                 throw new AppError(401, 'Invalid token. Please login again.');

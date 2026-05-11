@@ -32,6 +32,10 @@ const userSchema = new Schema<IUser>(
             default: IsActive.ACTIVE,
         },
         auths: [authProviderSchema],
+        refreshTokenVersion: {
+            type: Number,
+            default: 0,
+        },
     },
     {
         timestamps: true,

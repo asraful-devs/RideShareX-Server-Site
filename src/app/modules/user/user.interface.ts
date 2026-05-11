@@ -29,4 +29,5 @@ export interface IUser {
     isVerified?: boolean;
     role: Role;
     auths: IAuthProvider[];
+    refreshTokenVersion?: number; // For token rotation - prevents replay attacks
 }
