@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import httpStatus from 'http-status';
+import mongoose from 'mongoose';
 import AppError from '../../error/AppError';
 import { sendRidePickedEmail } from '../../utils/email/emailService';
 import { PaymentStatus } from '../payment/payment.interface';
@@ -13,8 +14,6 @@ const getAvailableRides = async () => {
     const result = await Ride.find({ status: 'PENDING' });
     return result;
 };
-
-import mongoose from 'mongoose';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const pickUpRide = async (req: Request, user: any) => {

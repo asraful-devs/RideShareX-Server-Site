@@ -29,7 +29,7 @@ const pickUpRide = catchAsync(async (req: Request, res: Response) => {
         throw new Error('Ride ID is required.');
     }
 
-    const result = await DriverService.pickUpRide(req, res, req.user);
+    const result = await DriverService.pickUpRide(req, req.user);
 
     sendResponse(res, {
         success: true,

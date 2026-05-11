@@ -1,5 +1,6 @@
-// Note: dotenv.config() is called from server.ts BEFORE any imports
-// This file should NOT call dotenv.config() again to avoid conflicts
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 interface EnvConfig {
     PORT: string;
