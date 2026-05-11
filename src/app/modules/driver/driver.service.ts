@@ -14,60 +14,98 @@ const getAvailableRides = async () => {
     return result;
 };
 
-const pickUpRide = async (
-    req: Request,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    user: any
-) => {
-    const rideId = req.params.rideId;
+import mongoose from 'mongoose';
 
-    const ride = await Ride.findById(rideId).populate('user driver');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pickUpRide = async (req: Request, user: any) => {
+    const session = await mongoose.startSession();
 
-    if (!ride) {
-        throw new AppError(httpStatus.NOT_FOUND, 'Ride not found');
+    try {
+        session.startTransaction();
+
+        const rideId = req.params.rideId;
+
+        // Find Ride
+        const ride = await Ride.findById(rideId)
+            .populate('user driver')
+            .session(session);
+
+        if (!ride) {
+            throw new AppError(httpStatus.NOT_FOUND, 'Ride not found');
+        }
+
+        // Check status
+        if (ride.status !== 'PENDING') {
+            throw new AppError(
+                httpStatus.BAD_REQUEST,
+                'Ride is not available for pickup'
+            );
+        }
+
+        // Check already assigned
+        if (ride.driver) {
+            throw new AppError(
+                httpStatus.BAD_REQUEST,
+                'Ride is already assigned to another driver'
+            );
+        }
+
+        // Update Ride
+        const result = await Ride.findByIdAndUpdate(
+            rideId,
+            {
+                status: 'PICKED',
+                driver: user.userId,
+            },
+            {
+                new: true,
+                session,
+            }
+        ).populate('user driver');
+
+        // Send Email After Commit
+        if (result && result.user && result.driver) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const populatedUser = result.user as any;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const populatedDriver = result.driver as any;
+
+            await sendRidePickedEmail({
+                userFirstName:
+                    populatedUser.fullName || populatedUser.name || 'Rider',
+
+                userEmail: populatedUser.email || '',
+
+                driverName:
+                    populatedDriver.fullName ||
+                    populatedDriver.name ||
+                    'Driver',
+
+                driverPhone: populatedDriver.phone || '',
+
+                rideStartLocation: result.pickupLocation || 'N/A',
+
+                rideEndLocation: result.dropLocation || 'N/A',
+
+                estimatedFare: result.payment || 0,
+
+                rideId: result._id?.toString() || '',
+            });
+        }
+
+        // Commit Transaction
+        await session.commitTransaction();
+
+        return result;
+    } catch (error) {
+        // Rollback Transaction
+        await session.abortTransaction();
+
+        throw error;
+    } finally {
+        // End Session
+        session.endSession();
     }
-
-    if (ride.status !== 'PENDING') {
-        throw new AppError(
-            httpStatus.BAD_REQUEST,
-            'Ride is not available for pickup'
-        );
-    }
-
-    if (ride.driver) {
-        throw new AppError(
-            httpStatus.BAD_REQUEST,
-            'Ride is already assigned to another driver'
-        );
-    }
-
-    const result = await Ride.findByIdAndUpdate(
-        rideId,
-        { status: 'PICKED', driver: user.userId },
-        { new: true }
-    ).populate('user driver');
-
-    // Send email notification to rider
-    if (result && result.user && result.driver) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const populatedUser = result.user as any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const populatedDriver = result.driver as any;
-
-        await sendRidePickedEmail({
-            userFirstName: populatedUser.firstName || 'Rider',
-            userEmail: populatedUser.email || '',
-            driverName:
-                populatedDriver.fullName || populatedDriver.name || 'Driver',
-            driverPhone: populatedDriver.phone || '',
-            rideStartLocation: result.pickupLocation || 'N/A',
-            rideEndLocation: result.dropLocation || 'N/A',
-            estimatedFare: result.payment || 0,
-            rideId: result._id?.toString() || '',
-        });
-    }
-
-    return result;
 };
 
 const updateRideStatus = async (
